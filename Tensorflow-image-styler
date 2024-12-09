@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec  9 15:57:53 2024
+
+@author: CaptainSuzy
+"""
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import numpy as np
+import time
+from tensorflow.keras.preprocessing import image
+import tensorflow_hub as hub
+
+# Učitaj slike: slika koju želiš stilizovati i stil koji želiš primeniti
+def load_img(path_to_img):
+    max_dim = 512
+    img = tf.io.read_file(path_to_img)
+    img = tf.image.decode_bmp(img, channels=3)
+    img = tf.image.convert_image_dtype(img, dtype=tf.float32)
+    
+    shape = tf.shape(img)
+    long_dim = max(shape[0], shape[1])
+    
+    # Skaliranje sa celobrojnom vrednošću
+    scale = max_dim / tf.cast(long_dim, tf.float32)  # scale je float32
+    
+    # Konvertuj shape[:2] u float32 pre množenja
+    new_shape = tf.cast(shape[:2], tf.float32) * scale  # Prvo pretvori shape[:2] u float32
+    
+    # Zaokruži nove dimenzije i konvertuj ih u int32
+    new_shape = tf.cast(tf.round(new_shape), tf.int32)  # Zaokruži i konvertuj u int32
+    
+    img = tf.image.resize(img, new_shape)
+    img = img[tf.newaxis, :]  # Dodaj batch dimenziju
+    return img
+
+
+# Prikazivanje slike
+def show_img(img):
+    img = np.array(img)
+    plt.imshow(img[0])
+    plt.axis('off')
+    plt.show()
+
+# Učitaj slike
+content_path = '.../Golden-retriever-puppy-870x460.bmp'
+style_path = '.../Starry-Night-canvas-Vincent-van-Gogh-New-1889.bmp'
+
+content_img = load_img(content_path)
+style_img = load_img(style_path)
+
+# Učitaj pretrenirane modele za sadržajnu i stilsku sliku
+hub_model = hub.load("https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2")
+stylized_image = hub_model(tf.constant(content_img), tf.constant(style_img))[0]
+
+# Prikazivanje stilizovane slike
+show_img(stylized_image)
